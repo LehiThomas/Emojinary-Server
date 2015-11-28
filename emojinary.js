@@ -32,15 +32,16 @@ var challengeSchema = mongoose.Schema({
 	answered: Date,
 	status: String,
 	emojis: [String],
-	tries: Number
+	tries: Number,
+	clue: [String]
 })
 var Challenge = mongoose.model('Challenge', challengeSchema);
 
 // Answer Challenge
 app.post('/answer', function (req, res) {
 	Challenge.update({_id: req.body._id},{answered: new Date()},function(err, doc){
-			User.update({id: req.body.opponent},{ $inc: { score: 5 }},function(err, doc){
-				User.update({id: req.body.challenger},{ $inc: { score: 5 }},function(err, doc){
+			User.update({id: req.body.opponent},{ $inc: { score: 5, coins: 5 }},function(err, doc){
+				User.update({id: req.body.challenger},{ $inc: { score: 5, coins: 5 }},function(err, doc){
 						res.sendStatus(200);
 					});
 			});
@@ -50,6 +51,13 @@ app.post('/answer', function (req, res) {
 // Fail to answer correctly
 app.post('/fail', function(req, res){
 	Challenge.update({_id: req.body._id}, { answered: new Date()}, function(err, doc){
+		res.sendStatus(200);
+	});
+});
+
+// Take points
+app.post('/takePoints', function (req, res) {
+	User.update({id: req.body.opponent},{ $inc: { coins: -5 }},function(err, doc){
 		res.sendStatus(200);
 	});
 });
@@ -81,23 +89,32 @@ app.get('/user', function (req, res) {
 
 	User.findOne({id: req.query.id}, function(err, user){
 		if(!user){
-
 			user = new User();
 			user.id = req.query.id;
 			//user.regid = req.query.regid;
-			user.score = 5;
-			console.log(user);
+			user.score = 0;
+			user.coins = 5;
 		}
 		User.findOneAndUpdate(
 			{id: user.id},
-			{$set: { lastActive: new Date(), score: user.score}},
+			{$set: { lastActive: new Date(), score: user.score, coins: user.coins}},
 			{upsert: true},
 			function(err, doc){
 				res.send(doc);
 			}
 		);
 	})
+});
 
+
+//Get Random
+app.get('/random', function (req, res) {
+
+	var size = User.count() - 1;
+	var randomIndex = Math.floor( Math.random() * size );
+	User.find().limit(-1).skip(randomIndex).next(function(err, doc){
+		res.send(doc);
+	});
 });
 
 
