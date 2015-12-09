@@ -110,9 +110,7 @@ app.get('/user', function (req, res) {
 //Get Random
 app.get('/random', function (req, res) {
 
-	var size = User.count() - 1;
-	var randomIndex = Math.floor( Math.random() * size );
-	User.find().limit(-1).skip(randomIndex).next(function(err, doc){
+	User.find({'id': {$ne : req.query.uid}}, function(err, doc){
 		res.send(doc);
 	});
 });
